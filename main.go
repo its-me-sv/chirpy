@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
@@ -18,10 +19,14 @@ func main() {
 	}
 
 	mux := http.NewServeMux()
+
 	mux.Handle("/app/", cfg.middlewareMetricsInc(http.StripPrefix("/app", http.FileServer(http.Dir(filePathRoot)))))
+
 	mux.HandleFunc("GET /api/healthz", handleReadiness)
 	mux.HandleFunc("GET /admin/metrics", cfg.handleMetrics)
 	mux.HandleFunc("POST /admin/reset", cfg.handleReset)
+
+	mux.HandleFunc("POST /api/validate_chirp", handleValidateChirp)
 
 	server := &http.Server{
 		Handler: mux,
@@ -65,4 +70,47 @@ func (cfg *apiConfig) handleMetrics(w http.ResponseWriter, req *http.Request) {
 func (cfg *apiConfig) handleReset(w http.ResponseWriter, req *http.Request) {
 	cfg.fileserverHits.Store(0)
 	w.WriteHeader(http.StatusOK)
+}
+
+func handleValidateChirp(w http.ResponseWriter, req *http.Request) {
+	defer req.Body.Close()
+
+	type requestBody struct {
+		Body string `json:"body"`
+	}
+	type responseBody struct {
+		Valid bool `json:"valid"`
+	}
+
+	reqBody := requestBody{}
+
+	if err := json.NewDecoder(req.Body).Decode(&reqBody); err != nil {
+		respondWithError(w, 500, fmt.Sprintf("Error decoding parameters: %s", err))
+		return
+	}
+
+	if len(reqBody.Body) > 140 {
+		respondWithError(w, 400, "Chirp is too long")
+		return
+	}
+
+	respondWithJSON(w, 200, responseBody{Valid: true})
+}
+
+func respondWithError(w http.ResponseWriter, statusCode int, msg string) error {
+	return respondWithJSON(w, statusCode, map[string]string{"error": msg})
+}
+
+func respondWithJSON(w http.ResponseWriter, statusCode int, payload interface{}) error {
+	response, err := json.Marshal(payload)
+	if err != nil {
+		return err
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Access-Control-Allow-Origin", "*")
+	w.WriteHeader(statusCode)
+	w.Write(response)
+
+	return nil
 }
