@@ -27,7 +27,7 @@ func (cfg *apiConfig) handleCreateUser(w http.ResponseWriter, req *http.Request)
 
 	reqBody := requestBody{}
 	if err := json.NewDecoder(req.Body).Decode(&reqBody); err != nil {
-		respondWithError(w, http.StatusInternalServerError, "Error decoding parameters", err)
+		respondWithError(w, http.StatusInternalServerError, "Error decoding request body", err)
 		return
 	}
 

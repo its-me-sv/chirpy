@@ -1,0 +1,72 @@
+package main
+
+import (
+	"encoding/json"
+	"net/http"
+	"strings"
+	"time"
+
+	"github.com/google/uuid"
+	"github.com/its-me-sv/chirpy/internal/database"
+)
+
+type Chirp struct {
+	ID        uuid.UUID `json:"id"`
+	CreatedAt time.Time `json:"created_at"`
+	UpdatedAt time.Time `json:"updated_at"`
+	Body      string    `json:"body"`
+	UserID    uuid.UUID `json:"user_id"`
+}
+
+func (cfg *apiConfig) handleCreateChirp(w http.ResponseWriter, req *http.Request) {
+	defer req.Body.Close()
+
+	type requestBody struct {
+		Body   string    `json:"body"`
+		UserId uuid.UUID `json:"user_id"`
+	}
+	type responseBody struct {
+		Chirp
+	}
+
+	reqBody := requestBody{}
+	if err := json.NewDecoder(req.Body).Decode(&reqBody); err != nil {
+		respondWithError(w, http.StatusInternalServerError, "Error decoding request body", err)
+		return
+	}
+
+	if len(reqBody.Body) > 140 {
+		respondWithError(w, http.StatusBadRequest, "Chirp is too long", nil)
+		return
+	}
+
+	createChirpParams := database.CreateChirpParams{
+		Body:   getProfanceReplacedString(reqBody.Body),
+		UserID: reqBody.UserId,
+	}
+	dbChirp, err := cfg.db.CreateChirp(req.Context(), createChirpParams)
+	if err != nil {
+		respondWithError(w, http.StatusInternalServerError, "unable to create chirp", err)
+		return
+	}
+
+	respondWithJSON(w, http.StatusCreated, responseBody{Chirp: Chirp(dbChirp)})
+}
+
+var profanceWords = [3]string{"kerfuffle", "sharbert", "fornax"}
+
+func getProfanceReplacedString(orginal string) string {
+	words := strings.Split(orginal, " ")
+
+	for i, word := range words {
+		lowered := strings.ToLower(word)
+		for _, profaneWord := range profanceWords {
+			if strings.Contains(lowered, profaneWord) {
+				words[i] = strings.ReplaceAll(lowered, profaneWord, "****")
+				break
+			}
+		}
+	}
+
+	return strings.Join(words, " ")
+}
