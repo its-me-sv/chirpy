@@ -8,6 +8,13 @@ import (
 	"github.com/google/uuid"
 )
 
+type User struct {
+	ID        uuid.UUID `json:"id"`
+	CreatedAt time.Time `json:"created_at"`
+	UpdatedAt time.Time `json:"updated_at"`
+	Email     string    `json:"email"`
+}
+
 func (cfg *apiConfig) handleCreateUser(w http.ResponseWriter, req *http.Request) {
 	defer req.Body.Close()
 
@@ -15,10 +22,7 @@ func (cfg *apiConfig) handleCreateUser(w http.ResponseWriter, req *http.Request)
 		Email string `json:"email"`
 	}
 	type responseBody struct {
-		ID        uuid.UUID `json:"id"`
-		CreatedAt time.Time `json:"created_at"`
-		UpdatedAt time.Time `json:"updated_at"`
-		Email     string    `json:"email"`
+		User
 	}
 
 	reqBody := requestBody{}
@@ -33,5 +37,7 @@ func (cfg *apiConfig) handleCreateUser(w http.ResponseWriter, req *http.Request)
 		return
 	}
 
-	respondWithJSON(w, http.StatusCreated, responseBody(newUser))
+	respondWithJSON(w, http.StatusCreated, responseBody{
+		User: User(newUser),
+	})
 }

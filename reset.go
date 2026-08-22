@@ -11,10 +11,11 @@ func (cfg *apiConfig) handleReset(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
+	cfg.fileserverHits.Store(0)
+
 	if err := cfg.db.DeleteAllUsers(req.Context()); err != nil {
-		respondWithError(w, http.StatusInternalServerError, "unable to delete all users", errors.New("failed to delete all users"))
+		respondWithError(w, http.StatusInternalServerError, "unable to delete all users", err)
 	}
 
-	cfg.fileserverHits.Store(0)
 	w.WriteHeader(http.StatusOK)
 }
