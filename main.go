@@ -52,6 +52,7 @@ func main() {
 	mux.HandleFunc("POST /api/users", cfg.handleCreateUser)
 
 	mux.HandleFunc("POST /api/chirps", cfg.handleCreateChirp)
+	mux.HandleFunc("GET /api/chirps", cfg.handleGetAllChirps)
 
 	server := &http.Server{
 		Handler: mux,

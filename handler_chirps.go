@@ -70,3 +70,20 @@ func getProfanceReplacedString(orginal string) string {
 
 	return strings.Join(words, " ")
 }
+
+func (cfg *apiConfig) handleGetAllChirps(w http.ResponseWriter, req *http.Request) {
+	defer req.Body.Close()
+
+	dbChirps, err := cfg.db.GetAllChirps(req.Context())
+	if err != nil {
+		respondWithError(w, http.StatusInternalServerError, "unable to retrieve all chirps", err)
+		return
+	}
+
+	chirps := make([]Chirp, len(dbChirps))
+	for i, chirp := range dbChirps {
+		chirps[i] = Chirp(chirp)
+	}
+
+	respondWithJSON(w, http.StatusOK, chirps)
+}
