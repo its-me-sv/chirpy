@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"errors"
 	"net/http"
 	"strings"
 	"time"
@@ -86,4 +87,28 @@ func (cfg *apiConfig) handleGetAllChirps(w http.ResponseWriter, req *http.Reques
 	}
 
 	respondWithJSON(w, http.StatusOK, chirps)
+}
+
+func (cfg *apiConfig) handleGetChirpByID(w http.ResponseWriter, req *http.Request) {
+	defer req.Body.Close()
+
+	chirpIDFromPath := req.PathValue("chirpID")
+	if chirpIDFromPath == "" {
+		respondWithError(w, http.StatusBadRequest, "missing \"chirpID\"", errors.New("missing required param \"chirpID\""))
+		return
+	}
+
+	chirpID, err := uuid.Parse(chirpIDFromPath)
+	if err != nil {
+		respondWithError(w, http.StatusBadRequest, "invalid \"chirpID\"", errors.New("malformed \"chirpID\""))
+		return
+	}
+
+	chirp, err := cfg.db.GetChirpByID(req.Context(), chirpID)
+	if err != nil {
+		respondWithError(w, http.StatusNotFound, "chirp not found", err)
+		return
+	}
+
+	respondWithJSON(w, http.StatusOK, Chirp(chirp))
 }
