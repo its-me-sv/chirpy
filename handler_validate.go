@@ -17,7 +17,6 @@ func handleValidateChirp(w http.ResponseWriter, req *http.Request) {
 	}
 
 	reqBody := requestBody{}
-
 	if err := json.NewDecoder(req.Body).Decode(&reqBody); err != nil {
 		respondWithError(w, http.StatusInternalServerError, "Error decoding parameters", err)
 		return

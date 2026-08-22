@@ -20,9 +20,12 @@ const (
 func main() {
 	godotenv.Load()
 
-	dbURL := os.Getenv("DB_URL")
+	dbURL, platform := os.Getenv("DB_URL"), os.Getenv("PLATFORM")
 	if dbURL == "" {
 		log.Fatalln("missing env variable \"DB_URL\"")
+	}
+	if platform == "" {
+		log.Fatalln("missing env variable \"PLATFORM\"")
 	}
 
 	db, err := sql.Open("postgres", dbURL)
@@ -34,6 +37,7 @@ func main() {
 	cfg := apiConfig{
 		fileserverHits: atomic.Int32{},
 		db:             dbQueries,
+		platform:       platform,
 	}
 
 	mux := http.NewServeMux()
@@ -45,6 +49,8 @@ func main() {
 
 	mux.HandleFunc("GET /admin/metrics", cfg.handleMetrics)
 	mux.HandleFunc("POST /admin/reset", cfg.handleReset)
+
+	mux.HandleFunc("POST /api/users", cfg.handleCreateUser)
 
 	server := &http.Server{
 		Handler: mux,
@@ -58,4 +64,5 @@ func main() {
 type apiConfig struct {
 	fileserverHits atomic.Int32
 	db             *database.Queries
+	platform       string
 }
