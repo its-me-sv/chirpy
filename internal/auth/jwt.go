@@ -2,22 +2,16 @@ package auth
 
 import (
 	"fmt"
+	"net/http"
+	"strings"
 	"time"
 
-	"github.com/alexedwards/argon2id"
-	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"
+
+	"github.com/golang-jwt/jwt/v5"
 )
 
 const tokenIssuer = "chirpy-access"
-
-func HashPassword(password string) (string, error) {
-	return argon2id.CreateHash(password, argon2id.DefaultParams)
-}
-
-func CheckPasswordHash(password, hash string) (bool, error) {
-	return argon2id.ComparePasswordAndHash(password, hash)
-}
 
 func MakeJWT(userID uuid.UUID, tokenSecret string, expiresIn time.Duration) (string, error) {
 	return jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.RegisteredClaims{
@@ -53,4 +47,18 @@ func ValidateJWT(tokenString, tokenSecret string) (uuid.UUID, error) {
 	}
 
 	return uuid.Parse(userID)
+}
+
+func GetBearerToken(headers http.Header) (string, error) {
+	authHeader := headers.Get("Authorization")
+	if authHeader == "" {
+		return "", fmt.Errorf("Bearer token not found")
+	}
+
+	tokens := strings.Split(strings.TrimSpace(authHeader), " ")
+	if len(tokens) != 2 || tokens[0] != "Bearer" {
+		return "", fmt.Errorf("Invalid token format")
+	}
+
+	return tokens[1], nil
 }

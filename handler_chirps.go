@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/its-me-sv/chirpy/internal/auth"
 	"github.com/its-me-sv/chirpy/internal/database"
 )
 
@@ -22,9 +23,20 @@ type Chirp struct {
 func (cfg *apiConfig) handleCreateChirp(w http.ResponseWriter, req *http.Request) {
 	defer req.Body.Close()
 
+	bearerToken, err := auth.GetBearerToken(req.Header)
+	if err != nil {
+		respondWithError(w, http.StatusUnauthorized, err.Error(), err)
+		return
+	}
+
+	tokenUserID, err := auth.ValidateJWT(bearerToken, cfg.jwtSecret)
+	if err != nil {
+		respondWithError(w, http.StatusUnauthorized, err.Error(), err)
+		return
+	}
+
 	type requestBody struct {
-		Body   string    `json:"body"`
-		UserId uuid.UUID `json:"user_id"`
+		Body string `json:"body"`
 	}
 	type responseBody struct {
 		Chirp
@@ -43,7 +55,7 @@ func (cfg *apiConfig) handleCreateChirp(w http.ResponseWriter, req *http.Request
 
 	createChirpParams := database.CreateChirpParams{
 		Body:   getProfanceReplacedString(reqBody.Body),
-		UserID: reqBody.UserId,
+		UserID: tokenUserID,
 	}
 	dbChirp, err := cfg.db.CreateChirp(req.Context(), createChirpParams)
 	if err != nil {

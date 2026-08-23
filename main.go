@@ -20,12 +20,15 @@ const (
 func main() {
 	godotenv.Load()
 
-	dbURL, platform := os.Getenv("DB_URL"), os.Getenv("PLATFORM")
+	dbURL, platform, jwtSecret := os.Getenv("DB_URL"), os.Getenv("PLATFORM"), os.Getenv("JWT_SECRET")
 	if dbURL == "" {
-		log.Fatalln("missing env variable \"DB_URL\"")
+		log.Fatalln(`missing env variable "DB_URL"`)
 	}
 	if platform == "" {
-		log.Fatalln("missing env variable \"PLATFORM\"")
+		log.Fatalln(`missing env variable "PLATFORM"`)
+	}
+	if jwtSecret == "" {
+		log.Fatalln(`missing env variable "JWT_SECRET"`)
 	}
 
 	db, err := sql.Open("postgres", dbURL)
@@ -38,6 +41,7 @@ func main() {
 		fileserverHits: atomic.Int32{},
 		db:             dbQueries,
 		platform:       platform,
+		jwtSecret:      jwtSecret,
 	}
 
 	mux := http.NewServeMux()
@@ -69,4 +73,5 @@ type apiConfig struct {
 	fileserverHits atomic.Int32
 	db             *database.Queries
 	platform       string
+	jwtSecret      string
 }

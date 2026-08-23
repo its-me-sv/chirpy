@@ -59,8 +59,13 @@ func (cfg *apiConfig) handleUserLogin(w http.ResponseWriter, req *http.Request) 
 	defer req.Body.Close()
 
 	type requestBody struct {
-		Email    string `json:"email"`
-		Password string `json:"password"`
+		Email            string `json:"email"`
+		Password         string `json:"password"`
+		ExpiresInSeconds *int64 `json:"expires_in_seconds"`
+	}
+	type responseBody struct {
+		User
+		Token string `json:"token"`
 	}
 
 	reqBody := requestBody{}
@@ -80,10 +85,24 @@ func (cfg *apiConfig) handleUserLogin(w http.ResponseWriter, req *http.Request) 
 		return
 	}
 
-	respondWithJSON(w, http.StatusOK, User{
-		ID:        userFromDb.ID,
-		CreatedAt: userFromDb.CreatedAt,
-		UpdatedAt: userFromDb.UpdatedAt,
-		Email:     userFromDb.Email,
+	expiresIn := time.Hour
+	if reqBody.ExpiresInSeconds != nil && *reqBody.ExpiresInSeconds != 0 {
+		expiresIn = min(expiresIn, time.Duration(*reqBody.ExpiresInSeconds)*time.Second)
+	}
+
+	token, err := auth.MakeJWT(userFromDb.ID, cfg.jwtSecret, expiresIn)
+	if err != nil {
+		respondWithError(w, http.StatusInternalServerError, "Failed to create access token", err)
+		return
+	}
+
+	respondWithJSON(w, http.StatusOK, responseBody{
+		User: User{
+			ID:        userFromDb.ID,
+			CreatedAt: userFromDb.CreatedAt,
+			UpdatedAt: userFromDb.UpdatedAt,
+			Email:     userFromDb.Email,
+		},
+		Token: token,
 	})
 }
