@@ -55,7 +55,7 @@ func GetBearerToken(headers http.Header) (string, error) {
 		return "", fmt.Errorf("Bearer token not found")
 	}
 
-	tokens := strings.Split(strings.TrimSpace(authHeader), " ")
+	tokens := strings.Split(authHeader, " ")
 	if len(tokens) != 2 || tokens[0] != "Bearer" {
 		return "", fmt.Errorf("Invalid token format")
 	}

@@ -61,7 +61,7 @@ func (cfg *apiConfig) handleUserLogin(w http.ResponseWriter, req *http.Request) 
 	type requestBody struct {
 		Email            string `json:"email"`
 		Password         string `json:"password"`
-		ExpiresInSeconds *int64 `json:"expires_in_seconds"`
+		ExpiresInSeconds int    `json:"expires_in_seconds"`
 	}
 	type responseBody struct {
 		User
@@ -86,8 +86,8 @@ func (cfg *apiConfig) handleUserLogin(w http.ResponseWriter, req *http.Request) 
 	}
 
 	expiresIn := time.Hour
-	if reqBody.ExpiresInSeconds != nil && *reqBody.ExpiresInSeconds != 0 {
-		expiresIn = min(expiresIn, time.Duration(*reqBody.ExpiresInSeconds)*time.Second)
+	if reqBody.ExpiresInSeconds > 0 && reqBody.ExpiresInSeconds < int(time.Hour/time.Second) {
+		expiresIn = time.Duration(reqBody.ExpiresInSeconds) * time.Second
 	}
 
 	token, err := auth.MakeJWT(userFromDb.ID, cfg.jwtSecret, expiresIn)
