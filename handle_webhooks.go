@@ -5,10 +5,17 @@ import (
 	"net/http"
 
 	"github.com/google/uuid"
+	"github.com/its-me-sv/chirpy/internal/auth"
 )
 
 func (cfg *apiConfig) handlePolkaWebhook(w http.ResponseWriter, req *http.Request) {
 	defer req.Body.Close()
+
+	apiKey, err := auth.GetAPIKey(req.Header)
+	if err != nil || apiKey != cfg.polkaKey {
+		w.WriteHeader(http.StatusUnauthorized)
+		return
+	}
 
 	type requestBody struct {
 		Event string `json:"event"`

@@ -20,7 +20,8 @@ const (
 func main() {
 	godotenv.Load()
 
-	dbURL, platform, jwtSecret := os.Getenv("DB_URL"), os.Getenv("PLATFORM"), os.Getenv("JWT_SECRET")
+	dbURL, platform := os.Getenv("DB_URL"), os.Getenv("PLATFORM")
+	jwtSecret, polkaKey := os.Getenv("JWT_SECRET"), os.Getenv("POLKA_KEY")
 	if dbURL == "" {
 		log.Fatalln(`missing env variable "DB_URL"`)
 	}
@@ -29,6 +30,9 @@ func main() {
 	}
 	if jwtSecret == "" {
 		log.Fatalln(`missing env variable "JWT_SECRET"`)
+	}
+	if polkaKey == "" {
+		log.Fatalln(`missing env variable "POLKA_KEY"`)
 	}
 
 	db, err := sql.Open("postgres", dbURL)
@@ -42,6 +46,7 @@ func main() {
 		db:             dbQueries,
 		platform:       platform,
 		jwtSecret:      jwtSecret,
+		polkaKey:       polkaKey,
 	}
 
 	mux := http.NewServeMux()
@@ -81,4 +86,5 @@ type apiConfig struct {
 	db             *database.Queries
 	platform       string
 	jwtSecret      string
+	polkaKey       string
 }
