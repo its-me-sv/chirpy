@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"errors"
 	"net/http"
 	"strings"
 	"time"
@@ -86,8 +87,21 @@ func getProfanceReplacedString(orginal string) string {
 func (cfg *apiConfig) handleGetAllChirps(w http.ResponseWriter, req *http.Request) {
 	defer req.Body.Close()
 
-	dbChirps, err := cfg.db.GetAllChirps(req.Context())
-	if err != nil {
+	authorIdFromQuery := req.URL.Query().Get("author_id")
+	dbChirps, err := []database.Chirp{}, errors.New("")
+
+	if authorIdFromQuery != "" {
+		authorId, err := uuid.Parse(authorIdFromQuery)
+		if err != nil {
+			respondWithError(w, http.StatusBadRequest, `invalid "author_id"`, nil)
+			return
+		}
+		dbChirps, err = cfg.db.GetAllChirpsByAuthor(req.Context(), authorId)
+	} else {
+		dbChirps, err = cfg.db.GetAllChirps(req.Context())
+	}
+
+	if err != nil && err.Error() != "" {
 		respondWithError(w, http.StatusInternalServerError, "unable to retrieve all chirps", err)
 		return
 	}
