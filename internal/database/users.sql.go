@@ -127,7 +127,8 @@ const upgradeUserToChirpyRed = `-- name: UpgradeUserToChirpyRed :exec
 UPDATE
   users
 SET
-  is_chirpy_red = TRUE
+  is_chirpy_red = TRUE,
+  updated_at = NOW()
 WHERE
   id = $1
 `
