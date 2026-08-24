@@ -11,10 +11,11 @@ import (
 )
 
 type User struct {
-	ID        uuid.UUID `json:"id"`
-	CreatedAt time.Time `json:"created_at"`
-	UpdatedAt time.Time `json:"updated_at"`
-	Email     string    `json:"email"`
+	ID          uuid.UUID `json:"id"`
+	CreatedAt   time.Time `json:"created_at"`
+	UpdatedAt   time.Time `json:"updated_at"`
+	Email       string    `json:"email"`
+	IsChirpyRed bool      `json:"is_chirpy_red"`
 }
 
 type userCreds struct {
@@ -48,10 +49,11 @@ func (cfg *apiConfig) handleCreateUser(w http.ResponseWriter, req *http.Request)
 	}
 
 	respondWithJSON(w, http.StatusCreated, User{
-		ID:        newUser.ID,
-		CreatedAt: newUser.CreatedAt,
-		UpdatedAt: newUser.UpdatedAt,
-		Email:     newUser.Email,
+		ID:          newUser.ID,
+		CreatedAt:   newUser.CreatedAt,
+		UpdatedAt:   newUser.UpdatedAt,
+		Email:       newUser.Email,
+		IsChirpyRed: newUser.IsChirpyRed,
 	})
 }
 
@@ -100,10 +102,11 @@ func (cfg *apiConfig) handleUserLogin(w http.ResponseWriter, req *http.Request) 
 
 	respondWithJSON(w, http.StatusOK, responseBody{
 		User: User{
-			ID:        userFromDb.ID,
-			CreatedAt: userFromDb.CreatedAt,
-			UpdatedAt: userFromDb.UpdatedAt,
-			Email:     userFromDb.Email,
+			ID:          userFromDb.ID,
+			CreatedAt:   userFromDb.CreatedAt,
+			UpdatedAt:   userFromDb.UpdatedAt,
+			Email:       userFromDb.Email,
+			IsChirpyRed: userFromDb.IsChirpyRed,
 		},
 		Token:        token,
 		RefreshToken: refreshTokenFromDb.Token,
@@ -161,9 +164,10 @@ func (cfg *apiConfig) handleUpdateUser(w http.ResponseWriter, req *http.Request)
 	}
 
 	respondWithJSON(w, http.StatusOK, User{
-		ID:        newUserData.ID,
-		CreatedAt: newUserData.CreatedAt,
-		UpdatedAt: newUserData.UpdatedAt,
-		Email:     newUserData.Email,
+		ID:          newUserData.ID,
+		CreatedAt:   newUserData.CreatedAt,
+		UpdatedAt:   newUserData.UpdatedAt,
+		Email:       newUserData.Email,
+		IsChirpyRed: newUserData.IsChirpyRed,
 	})
 }
