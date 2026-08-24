@@ -53,11 +53,12 @@ func main() {
 	mux.HandleFunc("GET /admin/metrics", cfg.handleMetrics)
 	mux.HandleFunc("POST /admin/reset", cfg.handleReset)
 
-	mux.HandleFunc("POST /api/users", cfg.handleCreateUser)
 	mux.HandleFunc("POST /api/login", cfg.handleUserLogin)
-
 	mux.HandleFunc("POST /api/refresh", cfg.handleRefreshToken)
 	mux.HandleFunc("POST /api/revoke", cfg.handleRevokeRefreshToken)
+
+	mux.HandleFunc("POST /api/users", cfg.handleCreateUser)
+	mux.HandleFunc("PUT /api/users", cfg.handleUpdateUser)
 
 	mux.HandleFunc("POST /api/chirps", cfg.handleCreateChirp)
 	mux.HandleFunc("GET /api/chirps", cfg.handleGetAllChirps)
