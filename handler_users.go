@@ -59,13 +59,13 @@ func (cfg *apiConfig) handleUserLogin(w http.ResponseWriter, req *http.Request) 
 	defer req.Body.Close()
 
 	type requestBody struct {
-		Email            string `json:"email"`
-		Password         string `json:"password"`
-		ExpiresInSeconds int    `json:"expires_in_seconds"`
+		Email    string `json:"email"`
+		Password string `json:"password"`
 	}
 	type responseBody struct {
 		User
-		Token string `json:"token"`
+		Token        string `json:"token"`
+		RefreshToken string `json:"refresh_token"`
 	}
 
 	reqBody := requestBody{}
@@ -85,14 +85,20 @@ func (cfg *apiConfig) handleUserLogin(w http.ResponseWriter, req *http.Request) 
 		return
 	}
 
-	expiresIn := time.Hour
-	if reqBody.ExpiresInSeconds > 0 && reqBody.ExpiresInSeconds < int(time.Hour/time.Second) {
-		expiresIn = time.Duration(reqBody.ExpiresInSeconds) * time.Second
-	}
-
-	token, err := auth.MakeJWT(userFromDb.ID, cfg.jwtSecret, expiresIn)
+	token, err := auth.MakeJWT(userFromDb.ID, cfg.jwtSecret, time.Hour)
 	if err != nil {
 		respondWithError(w, http.StatusInternalServerError, "Failed to create access token", err)
+		return
+	}
+
+	saveRefreshTokenParams := database.SaveRefreshTokenParams{
+		Token:     auth.MakeRefreshToken(),
+		UserID:    userFromDb.ID,
+		ExpiresAt: time.Now().UTC().Add(time.Hour * 24 * 60),
+	}
+	refreshTokenFromDb, err := cfg.db.SaveRefreshToken(req.Context(), saveRefreshTokenParams)
+	if err != nil {
+		respondWithError(w, http.StatusInternalServerError, "Failed to create refresh token", err)
 		return
 	}
 
@@ -103,6 +109,7 @@ func (cfg *apiConfig) handleUserLogin(w http.ResponseWriter, req *http.Request) 
 			UpdatedAt: userFromDb.UpdatedAt,
 			Email:     userFromDb.Email,
 		},
-		Token: token,
+		Token:        token,
+		RefreshToken: refreshTokenFromDb.Token,
 	})
 }
