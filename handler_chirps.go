@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"errors"
 	"net/http"
+	"slices"
+	"sort"
 	"strings"
 	"time"
 
@@ -11,6 +13,8 @@ import (
 	"github.com/its-me-sv/chirpy/internal/auth"
 	"github.com/its-me-sv/chirpy/internal/database"
 )
+
+var sortOrders = []string{"asc", "desc"}
 
 type Chirp struct {
 	ID        uuid.UUID `json:"id"`
@@ -87,6 +91,12 @@ func getProfanceReplacedString(orginal string) string {
 func (cfg *apiConfig) handleGetAllChirps(w http.ResponseWriter, req *http.Request) {
 	defer req.Body.Close()
 
+	sortOrder := req.URL.Query().Get("sort")
+	if sortOrder != "" && !slices.Contains(sortOrders, sortOrder) {
+		respondWithError(w, http.StatusBadRequest, `invalid "sort"`, nil)
+		return
+	}
+
 	authorIdFromQuery := req.URL.Query().Get("author_id")
 	dbChirps, err := []database.Chirp{}, errors.New("")
 
@@ -109,6 +119,10 @@ func (cfg *apiConfig) handleGetAllChirps(w http.ResponseWriter, req *http.Reques
 	chirps := make([]Chirp, len(dbChirps))
 	for i, chirp := range dbChirps {
 		chirps[i] = Chirp(chirp)
+	}
+
+	if sortOrder == "desc" {
+		sort.Slice(chirps, func(i, j int) bool { return chirps[i].CreatedAt.After(chirps[j].CreatedAt) })
 	}
 
 	respondWithJSON(w, http.StatusOK, chirps)
